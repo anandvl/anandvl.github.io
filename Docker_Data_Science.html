@@ -1,731 +1,560 @@
 <html>
-  <head>
-    <title>Docker containers for Data Science</title>
-    <meta content="">
-    <style></style>
-  </head>
-  <body>
-<p>Docker background
-    - Separate machines
-    - Dual boot
-    - VMs
-    - Docker</p>
-
-<pre><code>A container runs natively on Linux and shares the kernel of the host machine with other containers. It runs a discrete process, taking no more memory than any other executable, making it lightweight.
+ <body>
+  <h1 id="background">
+   Background
+  </h1>
+  <p>
+   Couple decades back, developers intending to build and test their applications on different operating systems (OS) or platforms would have been forced to buy multiple sets of hardware to do so.  Some of them may have instead used the same set of hardware but set up complicated multi-boot sequences to be able to boot up to different operating system and development environments.
+  </p>
+  <p>
+   Over these couple decades, server processing power and capacity increased, but most applications did not need all these additional resources.  Then, hardware virtualization software came along that runs on tops on physical servers to emulate a hardware system.  This software allowed the creation of virtual machines (VM), each of which runs its own guest OS irrespective of the host OS on the physical server.  Running multiple VMs on the same physical server helped make better use of the server’s resources and thus, cost savings.  It also helped developers to quickly provision additional machines (VMs) as needed to develop and test their application.
+  </p>
+  <p>
+   Since each VM included a full blown system, it consumed lot of host system resources (gigabytes of memory and few gigabytes of storage).  In general, VMs provide an environment with more resources than most applications need.  Starting up a new VM is quicker and convenient than rebooting in to a new system (as with multi-boot systems) but it still took a few minutes.
+  </p>
+  <p>
+   Operating system (OS) virtualization allows virtual environments (commonly called containers) to run on top of the host OS - each of these containers shared the core component (kernel) of the host OS but had their own isolated user-space.  These containers will look like real OS for the programs that run within these containers by packaging all (and only) the specific libraries and binaries that are needed for the program to run (making it lightweight).  Compared to VMs, containers take up MBs to a few gigabytes of memory and storage and start up in a few seconds.  Though the concept of containers have existed for a long period in Linux and Unix systems, Docker augmented it with additional features that made this technology customizatble and easy to use.
+  </p>
+  <h1 id="docker-fundamentals">
+   Docker fundamentals
+  </h1>
+  <p>
+   The Docker engine is the software that sits on top of the host OS and manages the creation (running) of containers.  If the containers are the equivalent of VMs, then Docker is the equivalent of the virtualization software.  The blueprint for each Docker container is a Docker image, which has to be specified when you create (run) a container.  For those familiar with object oriented programming (OOP), a docker image and container is equivalent to that of a class and object (instance of a class), respectively.   Just like in OOP, you could have multiple containers running simulataneously that are spawned off the same docker image.
+  </p>
+  <p>
+   A Docker image is made up of a series of filesystem layers representing instructions that make up an executable software application. An image is an immutable binary file including the application and all other dependencies such as libraries, binaries and instructions necessary for running the application.
+  </p>
+  <p>
+   Pre-built images are availabe in Docker registries.  One of the most popular registry is
+   <a href="https://hub.docker.com">
+    Dockerhub
+   </a>
+   .  In addition to numerous images created by individuals, Dockerhub alsos hosts ‘official’ images for various popular open source software such as python, r-base, MySQL, Tomcat, etc.  To begin experimenting with running and interacting with Docker containers, these images could serve as a good starting point.  Some of the other common registries are Quay, Google container registry, and Amazon Elastic Container Registry.
+  </p>
+  <p>
+   Later, you will want to start building your own customized images to meet your specific needs. A new image is created from a ‘Dockerfile’, which is a text file listing out the sequence of the above-mentioned instructions that constitute the image.  We will briefly go over this process later.  For more information, there are plenty of in-depth Docker guides online and the official docker documentation is excellent. In addition, in most cases, you can also review the ‘Dockerfile’ of the images available in the registries.
+  </p>
+  <p>
+   But, before you could run a docker image and create a container, you need to install Docker engine on your system(the host).
+  </p>
+  <h1 id="docker-installation-on-debian-stretch">
+   Docker installation on Debian stretch
+  </h1>
+  <p>
+   Instructions are provided for Debian Stretch (Debian 9).  Instructions for other Linux systems are similar and should be available online.  In all the code segments words beginning with ‘AA..’ refer to those that have to be supplied by the user for their specific example.  For instance ‘AAimage-name’ will refer to the specific Docker image that you will be applying the command to
+  </p>
+  <p>
+   Update the package list and upgrade all installed packages
+  </p>
+  <pre><code class="bash">sudo apt update
+sudo apt upgrade
 </code></pre>
-
-<p>By contrast, a virtual machine (VM) runs a full-blown “guest” operating system with virtual access to host resources through a hypervisor. In general, VMs provide an environment with more resources than most applications need.</p>
-
-<p>Docker fundamentals
-    A Docker image is made up of a series of filesystem layers representing instructions that make up an executable 
-    software application. An image is an immutable binary file including the application and all other dependencies 
-    such as libraries, binaries and instructions necessary for running the application.</p>
-
-<pre><code>When you 'run' a docker image, you create a container which is a snapshot of the corresponding image. For those
-familiar with object oriented programming (OOP), a docker image and container is equivalent to that of a class and
-object (instance of a class).  Just like in OOP, you could have multiple containers running simulataneously that
-are spawned off the same docker image.
-
-Pre-built images are availabe in Docker registries.  One of the most popular registry is 
-[Dockerhub][https://hub.docker.com].  At Dockerhub, In addition to numerous images created by individuals, 
-you will also find 'official' images for various popular open source software such as python, r-base, 
-MySQL, Tomcat, etc.  To begin experimenting with running and interacting with Docker containers, these 
-images could serve as a good starting point.  Some of the other common registries are Quay, Google
-container registry, Amazon Elastic Container Registry.
-
-Later, you may want to start building your own customized image to meet your needs. A new image is created 
-from a 'Dockerfile', which is a text file listing out the sequence of the above-mentioned instructions that 
-constitute the image.  We will briefly go over this process later.  For more information, there are plenty 
-of in-depth Docker guides online and the official docker documentation is excellent and . In addition, in 
-most cases, you can also review the 'Dockerfile' of the images available in the registries.
-
-But, before you could run a docker image and create a container, you need to install Docker on your system - 
-typically referred to as the host system.
+  <p>
+   Install required dependencies to add new repositories over HTTPS (some of it may already be installed)
+  </p>
+  <pre><code class="bash">sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2
 </code></pre>
-
-<p>Docker installation on Debian 9 and Windows 10
-    Instructions are provided for Debian Stretch (Debian 9) and Windows 10 (Professional or Enterprise 64-bit). <br />
-    Instructions for other Linux systems are similar and should be available online.  Installation of Docker 
-    in other Windows version (7, 8, 10 Home etc.) require installation of additional software (Docker Toolbox) 
-    and are not covered here.</p>
-
-<pre><code>For Debian stretch
-    Update the package list and upgrade all installed packages
-        sudo apt update
-        sudo apt upgrade
-
-    Install required dependencies to add new repositories over HTTPS (some of it may already be installed)
-        sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2
-
-    Add the Docker’s GPG key to your apt keyring 
-        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-
-    Verify that you now have the key with the following fingerprint 
-        9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88, 
-        by searching for the last 8 characters of the fingerprint.
-    sudo apt-key fingerprint 0EBFCD88
-
-    Add the Docker stable repository to the apt-repository list
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable"
-
-    Once again, update the package list (with the newly added repository) and install docker community edition
-        sudo apt update
-        sudo apt install docker-ce
-
-    The docker service starts automatically once installed, To verify installation 
-        sudo systemctl status docker
-        and/or
-        sudo docker -v
-
-    To run Docker commands without prepending sudo you’ll need to add your user to the docker group that is
-        created during Docker installation. 
-        sudo usermod -aG docker $USER
-
-For Windows 10.  
-    The whole process may require one reboot and will require one session log out.  So, be prepared by
-    saving all your current work and closing out all apps to be safe.
-
-    Go to Control Panel, select Turn on or off Windows featuers.  Scroll down and put a check mark
-        next to the following two featuers
-            - 'Hyper-V' 
-            - 'Containers'.
-    This will take a few mins to apply changes and will require a reboot
-
-    Go online (Internet explorer OR Edge browser) and download 'Docker for Windows Installer.exe'
-    from https://store.docker.com/editions/community/docker-ce-desktop-windows
-
-    Once downloaded go to the download location (by default, it will go to the 'Downloads' folder
-    in your user space) and run the downloaded executable.
-
-    Leave all default selections
-
-    Will require you to log out and log back in. 
-
-    Double-click on the docker shortcut on the Desktop and the Docker icon will show up in the 
-    running apps on the taskbar.
-
-    Left click on the 'Start menu' and select 'Open PowerShell Window as Admin'.  Then, type
-        docker -v
+  <p>
+   Add the Docker’s GPG key to your apt keyring
+  </p>
+  <pre><code class="bash">curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
 </code></pre>
-
-<p>Additional configurations (if necessary)
-    On Debian stretch
-        - The default location for all images, storage space for running containers, storage volumes that
-            you may create (to be discussed later), etc is /var/lib/docker.  To change the default location 
-            for these, in case you have limited space in  your /var partition.  Assume the full path to
-            your new location is /alt<em>loc.
-            - stop the docker service
-                sudo service docker stop OR sudo systemctl stop docker
-            - edit /etc/default/docker file 
-                #DOCKER</em>OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
-                DOCKER<em>OPTS="-g /alt</em>loc"
-                DOCKER<em>TMPDIR="/alt</em>loc/tmp"
-            - Create the new location, if it does not exist
-                sudo /alt<em>loc
-            - Backup existing files
-                sudo tar -zcC /var/lib/docker > /some</em>location/docker<em>backup-$(date +%s).tar.gz
-            - Move the existing files to the new location
-                sudo mv /var/lib/docker /alt</em>loc
-            - Create a symlink of the new location to the default location 
-                sudo ln -s /home/shared/docker /var/lib/docker
-            - Restart service
-                sudo service docker start OR sudo systemctl start docker</p>
-
-<pre><code>On Windows 10:
-    Right-click on Docker icon and chose 'Settings'. You can review and change all the available 
-    setting.  More typical ones will be to 
-    - change the location of the images in case you have limited space in your Windows installation
-        partition (typically, C:).  Images vary in size, but in most cases, it could lie between
-        2 - 10 GBs per image.  Go to
-    - Change the number of cores and memory available to Docker.  Go to
+  <p>
+   Verify that you now have the key with the following fingerprint
+   <br/>
+   9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88,
+   <br/>
+   by searching for the last 8 characters of the fingerprint.
+  </p>
+  <pre><code class="bash">sudo apt-key fingerprint 0EBFCD88
 </code></pre>
-
-<p>Docker - Part 2:
-Common commands to use existing images from dockerhub
-    General syntax of a Docker command is</p>
-
-<pre><code>docker command [option] [subcommand] [arguments]
-
-To get general info about the docker installation
-    docker info
-
-One of the lines towards the end will be
-    Registry: https://index.docker.io/v1/
-The address corresponds to Dockerhub that I explained above and this lines denotes that Dockerhub
-is the default registry to pull (download) images.  The default registry cannot be changed.
-
-All images in Dockerhub are of the format
-    REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-For ex:  rocker/tidyverse:3.4.0
-IMAGE_TAG is optional and by default is set to 'latest'.  Some images will have different tags
-corresponding to different versions such as 'devel', 'testing', or some kind of numerical sequence
-like '3.4.0'
-
-To search for images in Dockerhub with specific keywords (for ex: python) in the name
-    docker search python
-The keyword could include REPOSITORY_NAME or IMAGE_NAME
-
-To download an image from Dockerhub on to your local system
-    docker pull REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-
-To download an image not hoste on Dockerhub (private registries, locally hosted registries, etc.)
-    docker pull other_registry:portNumber/REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-If this other registry requires authentication, you first have to login to this repository as
-    docker login other_registry:portNumber
-
-Another less commonly used option to obtain an image is a 'tar' file of the image that has been
-created by the same or an older version of docker.  This option is used if you wish to share a
-docker image amongst multiple machines without having to go through Dockerhub or any other 
-registries.
-    docker load -i image-name.tar
-
-To list all the images available on your local system do
-    docker images OR docker image ls
-To delete a specific image
-    docker image rm REPOSITORY_NAME/IMAGE_NAME
-
-To create (run) a container from an image, the basic command is
-    docker run image_name OR docker container run image_name
-
-Most practical docker images will start a process and the output of this process will be
-displayed in the same terminal.  One such example will be an image that is set up to start 
-a web server. 
-
-If the image is not set up to run a process, then, you may wish it run it in interactive mode
-and run various commands within the container.  In this case, you will create(run) a container
-with the '-it' mode (interactive, start a termina)
-    docker run -it image_name
-In this case you will be returned with a terminal prompt inside the running container, where
-you can run commands.  Once you exit this terminal prompt, the container will stop.
-
-If the image is set up to run a process, but you do not wish to see the process output displayed
-on the screen, you will run (create) the container in 'detached' mode using the '-d' option.
-    docker run -d image_name    
-
-Once the container has finished executing the process that got started with the container, it 
-will stop running.
-
-To find the list of running containers 
-    docker ps OR docker container ls
-To find the list of stopped containers 
-    docker ps -a OR docker container ls -a
-
-Another common option to use when creating a container is '--name', which gives you an option
-to provide an easy to identify name for the container.  If not, you will have to use a 
-system generated random name, or a jumble of random alpha numeric characters that serve
-as the container UUID, if you wish to interact with the container.  
-    docker run --name=identifiable_name -d image_name
-
-For example, to stop a running container, 
-    docker container stop identifiable_name
-Similarly, to re-start a stopped container,
-    docker container start identifiable_name
-To remove a stopped container
-    docker container rm identifiable_name
-
-To automatically remvoe the container once it stops, use the '--rm' option when you
-create a container
-    docker run --name=identifiable_name -d --rm image_name
-
-In addition to the above two methods of running a process within a container (either in
-interactive mode or if the process is built in to the image), you could also specify it
-when you run the container
-    docker run --name=identifiable_name -d --rm image_name run_some_process
-    docker run --name=identifiable_name -d --rm image_name /bin/bash -c "run_some_shell_command"
-In this case, the container will stop (and get removed) once the process finished executing.
-
-To run additional processes on running containers
-    docker exec -d identifiable_name run_some_additional_process
-    docker exec -it identifiable_name
-In the second case, you will be returned with a terminal prompt inside the running container, 
-where you can run additional commands (for instance, if you wish to monitor any processes
-that may have been running in the container).
-
-To get statistics on the resources that are being used by running containers,
-    docker stats
-
-When you create (run) a container, additional options to limit the resources (CPUs, memory, etc.) used
-by container could be sets.  For a full list, 
-    docker run --help
-
-Similarly, some of these options could be updated for a running container.  For the syntax and complete
-list of options, 
-    docker update --help
-
-Most practical Docker images are set up to run a service (for instance, a web server) on a specific
-port when a container is created with this image. To be able to access this port within the container from the
-host machine, a user defined port on the host machine is bound (mapped) to that of the container.  This is
-done by using the "-p" option when creating (running) the container
-    docker run --name=identifiable_name -d --rm -p 1234:4321 image_name
-Here the service in the image is set up to run on 4321.  On the host computer, once the container is
-created, this service will be accessed on port 1234.  For example, if this service was a web-server,
-then, the web-server can be accessed on the host computer by going to 'http://localhost:1234' in 
-any browser (or it will be 'https://localhost:1234', depending on the web-server).  Multiple such
-ports could be mapped with multiple '-p' options
-
-By default, all data created inside a container (such as, files, are modifications to files) do not
-persist, once the container does not exist (once the container is stopped and removed). In other words,
-this data will not be accessible by other containers (or by the host system).  There are two
-options for containers to store files on the host machine. On Linux hosts, there is an additional
-option too.  There is an excellent comparison of these options in the official Docker documentation at 
-https://docs.docker.com/storage/
-
-Using bind mounts, a file or folder on the host machine is mounted on to a container. In this manner,
-data modified by the container can easily be accessed in the host system by non-docker processes as
-well as other containers by performing a similar bind mount during their creation. On the other
-hand, if the file or folder on the host machine used for the bind mounts contains system-critical files, 
-they could be irreparably modified by any of the containers, thus damaging the host system. 
-To do this, we use the '-v' option when we are creating
-the container
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v /host_folder:/container_folder image_name
-    For ex: we can use the current working folder on the host machine
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v $PWD:/container_folder image_name
-
-Docker specific storage volumes can be created by docker,
-    docker volume create volume_name
-where 'volume_name' is user specified
-These are are stored in a part of the host filesystem managed by Docker (/var/lib/docker/volumes
-OR /alt_loc/volumes, on Linux).  Non-docker processes on the host system will not easily modify 
-this part of the filesystem and the data in the storage volume can be accessed by all containers 
-in this host by adding the '--mount' option when creating the container src=volume_name,dst=/container_folder   
-    docker run --name=identifiable_name -d --rm -p 1234:4321 --mount src=volume_name,dst=/container_folder image_name
-In other words, this option is safer to the host system.  It should be the preferred method for 
-transferring data between containers, especially if we do not need direct access to the data on the host
-system.  
-
-If necessary, we could combine these by having both a bind mount and a storage volume mounted to 
-2 different locations on the container (Docker does not allow the same destination folder) when
-the container is created.  Then, we can transfer files between these two destination folder within
-the container.  This could be a good option to periodically do a backup of the data being created,
-modified, and shared between the containers (for instance, data in a containerized database 
-application).
-
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name   
-
-If we need to run a X11 based GUI application from within the container and we have a X-server 
-running on the host (typically the case in Linux systems), we could achieve these by bind mounting
-specific folders on the host system to the corresponding folders in the container and specifying
-the DISPLAY variable in the container to point to that of the host system.  In this case, the GUI 
-application in the container could only be executed after the container has been created and hence,
-cannot be part of the image.
-
-    docker run --name=identifiable_name -d --rm --net=host -e DISPLAY -v "$HOME/.Xauthority:/root/.Xauthority:rw" -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name GUI_appl
+  <p>
+   Add the Docker stable repository to the apt-repository list
+  </p>
+  <pre><code class="bash">sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable"
 </code></pre>
-
-<p>Docker - Part 3
-Process to create your own (Dockerfile)
-    Being able to create (run) containers out of pre-built standardized images provides an opportunity 
-    to experiment with different software without the complexities of installing (and uninstalling)
-    ensuring all dependencies are met, and compatibility with other existing components, etc.  More 
-    importantly, it provides us a means to orchestrate the startup and shutdown of multiple containers
-    to create an application.  Using docker compose and swarms (not covered here, but discussed very
-    clearly in [docker documentation][https://docs.docker.com/get-started/], such an application could
-    be scaled very easily by starting (and shuttind down) multiple containers on the same or multiple 
-    hosts.  This could be made more efficient with the ability to easily create your own specialized
-    images geared towards the specific needs of an application.  Ideally, each image - to be more
-    specific, the container that runs off a specific image - is configured to perform a very specific
-    task (or service) of your application.</p>
-
-<pre><code>To create a Docker image, first create a Dockerfile with a series of instructions that represent
-the commands a user could all on the command line to assemble an image.  Then, a docker image can 
-be built by running the following command in the same folder as the Dockerfile
-    docker build -t REPOSITORY_NAME/IMAGE_NAME .
-(The REPOSITORY_NAME will not have any meaning at present, but we will see later how it could 
-become relevant when we plan to load this image on to a registy such as Dockerhub)
-
-Review the Dockefile at .. for a very basic example.  
-    - The 'FROM' instruction denotes the 'base' image on which additional components
-        are added to build the final image.  The 'base' image will be one of the 
-        pre-built images already available in Dockerhub (or locally, on your host
-        system).  A Dockerfile must always start with this instruction
-    - The 'MAINTAINER' instruction is more of a information than a requirements
-    - The 'ENV' instruction sets environment variables that will be needed for other parts of the
-        image to work correctly
-    - The RUN instruction will execute any commands in a new layer on top of the current image 
-        and commit the results. The resulting committed image will be used for the next instruction 
-        in the Dockerfile
-
-One way to make sure that the entire image will get built correctly and work as intended once 
-you build it using Dockerfile is to start a container with the base image with an interactive
-shell ('-it' option) and start going through each of the instruction in the Docker file.
-
-Once you built the image using the 'docker build..' command described above, you can start 
-creating (running) a container with it on your host system.  You could also use this as a 
-base image for complex images.  To share the image with others, you could either
-
-- host it to Dockerhub so that others could pull the image from 
-
-- create a 'tar' file of the image so that you copy the file to other hosts and load the image
-
-- upload the Dockerfile to a github repository and link your dockerhub account to the github
-    repository so that you could set up automated build of the docker image.  This serves
-    two purposes - whenever you update your Dockerfile in the future, you just need to upload
-    it to your repository and the docker image on dockerhub will be recreated automatically.
-    In addition, it saves uploading the entire docker image to Dockerhub.  In general, for
-    home internet connections, the upload speeds (data transfers going out of your home
-    network) is much slower than download speeds.
-</code></pre>	
-	
-	</body>
+  <p>
+   Once again, update the package list (with the newly added repository) and install docker community edition
+  </p>
+  <pre><code class="bash">sudo apt update
+sudo apt install docker-ce
+</code></pre>
+  <p>
+   The docker service starts automatically once installed, To verify installation
+  </p>
+  <pre><code class="bash">sudo systemctl status docker
+</code></pre>
+  <p>
+   and/or
+  </p>
+  <pre><code class="bash">sudo docker -v
+</code></pre>
+  <p>
+   To run Docker commands without prepending sudo you’ll need to add your user to the docker group that is created during Docker installation.
+  </p>
+  <pre><code class="bash">sudo usermod -aG docker $USER
+</code></pre>
+  <h4 id="additional-configurations-if-necessary">
+   Additional configurations (if necessary)
+  </h4>
+  <p>
+   The default location for all images, storage space for running containers, storage volumes that you may create (to be discussed later), etc is /var/lib/docker.  To change the default location for these, in case you have limited space in  your /var partition, go through the following steps (assume the full path to your new location is /AAalt_loc).
+  </p>
+  <blockquote>
+   <p>
+    stop the docker service
+   </p>
+  </blockquote>
+  <pre><code>    sudo service docker stop OR sudo systemctl stop docker
+</code></pre>
+  <blockquote>
+   <p>
+    edit /etc/default/docker file to add environmental variables DOCKER_OPTS and DOCKER_TMPDIR
+   </p>
+  </blockquote>
+  <pre><code>    #DOCKER_OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
+    DOCKER_OPTS="-g /AAalt_loc"
+    DOCKER_TMPDIR="/AAalt_loc/tmp"
+</code></pre>
+  <blockquote>
+   <p>
+    Create the new location, if it does not exist
+   </p>
+  </blockquote>
+  <pre><code>    sudo /AAalt_loc
+</code></pre>
+  <blockquote>
+   <p>
+    Backup existing files
+   </p>
+  </blockquote>
+  <pre><code>    sudo tar -zcC /var/lib/docker &gt; /AAalt_loc/docker_backup-$(date +%s).tar.gz
+</code></pre>
+  <blockquote>
+   <p>
+    Move the existing files to the new location
+   </p>
+  </blockquote>
+  <pre><code>    sudo mv /var/lib/docker /AAalt_loc
+</code></pre>
+  <blockquote>
+   <p>
+    Create a symlink of the new location to the default location
+   </p>
+  </blockquote>
+  <pre><code>    sudo ln -s /home/shared/docker /var/lib/docker
+</code></pre>
+  <blockquote>
+   <p>
+    Restart service
+   </p>
+  </blockquote>
+  <pre><code>&gt;   sudo service docker start OR sudo systemctl start docker
+</code></pre>
+  <h2 id="use-pre-built-images">
+   Use pre-built images
+  </h2>
+  <p>
+   General syntax of a Docker command is
+  </p>
+  <pre><code>docker command [option] [subcommand] [arguments]
+</code></pre>
+  <p>
+   To get general info about the docker installation
+  </p>
+  <pre><code>docker info
+</code></pre>
+  <p>
+   One of the lines towards the end will be
+   <br/>
+   Registry:
+   <a href="https://index.docker.io/v1/">
+    https://index.docker.io/v1/
+   </a>
+   <br/>
+   The address corresponds to Dockerhub that I explained above and this lines denotes that Dockerhub is the default registry to pull (download) images.  The default registry cannot be changed.
+  </p>
+  <p>
+   All images in Dockerhub are of the format
+  </p>
+  <pre><code>NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   For ex:  rocker/tidyverse:3.4.0.  IMAGE_TAG is optional and by default is set to ‘latest’.  Some images will have different tags corresponding to different versions such as ‘devel’, ‘testing’, or some kind of numerical sequence like ‘3.4.0’
+  </p>
+  <p>
+   To search for images in Dockerhub with specific keywords (for ex: python) in the name
+  </p>
+  <pre><code>docker search python
+</code></pre>
+  <p>
+   The keyword could include NAMESPACE or REPOSITORY or the Description of the repository
+  </p>
+  <p>
+   To download an image from Dockerhub on to your local system (TAG is always optional and will always default to ‘latest’, if not present)
+  </p>
+  <pre><code>docker pull NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   To download an image not hosted on Dockerhub (private registries, locally hosted registries, etc.)
+  </p>
+  <pre><code>docker pull AAother_registry:portNumber/NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   If this other registry requires authentication, you first have to login to this repository
+  </p>
+  <pre><code>docker login AAother_registry:portNumber
+</code></pre>
+  <p>
+   Another less commonly used option to obtain an image is a ‘tar’ file of the image that has been created by the same or an older version of docker.  This option is used if you wish to share a docker image amongst multiple machines without having to go through Dockerhub or any other registries.
+  </p>
+  <pre><code>docker load -i image-name.tar
+</code></pre>
+  <p>
+   To list all the images available on your local system do
+  </p>
+  <pre><code>docker images OR docker image ls
+</code></pre>
+  <p>
+   To delete a specific image (to reclaim storage space on your host system, for instance)
+  </p>
+  <pre><code>docker image rm NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   To create (run) a container from an image (for instance, ‘AAimage_name’), the basic command is
+  </p>
+  <pre><code>docker run AAimage_name OR docker container run AAimage_name
+</code></pre>
+  <p>
+   Most practical docker images will start a process and the output of this process will be displayed in the same terminal.  One such example will be an image that is set up to start a web server.
+  </p>
+  <p>
+   If the image is not set up to run a process, then, you may wish it run it in interactive mode and run various commands within the container.  In this case, you will create(run) a container with the ‘-it’ option (interactive, start a termina)
+  </p>
+  <pre><code>docker run -it AAimage_name
+</code></pre>
+  <p>
+   and will be returned with a terminal prompt inside the running container, where you can run commands.  Once you exit this terminal prompt, the container will stop.
+  </p>
+  <p>
+   If the image is set up to run a process, but you do not wish to see the process output displayed on the screen, you will run (create) the container in ‘detached’ mode using the ‘-d’ option.
+  </p>
+  <pre><code>docker run -d AAimage_name
+</code></pre>
+  <p>
+   Once the container has finished executing the process that got started with the container, it will stop running.
+  </p>
+  <blockquote>
+   <p>
+    To find the list of running containers
+   </p>
+  </blockquote>
+  <pre><code>    docker ps 
+    OR 
+    docker container ls
+</code></pre>
+  <blockquote>
+   <p>
+    To find the list of stopped containers
+   </p>
+  </blockquote>
+  <pre><code>    docker ps -a 
+    OR 
+    docker container ls -a
+</code></pre>
+  <p>
+   Another common option to use when creating a container is ‘–name’, which gives you an option to provide an easy to identify name for the container (for instance, ‘AAidentifiable_name’)  If not, you will have to use a system generated random name, or a jumble of random alpha numeric characters that serve as the container UUID, if you wish to interact with the container.
+  </p>
+  <pre><code>docker run --name=AAidentifiable_name -d image_name
+</code></pre>
+  <p>
+   For example, to stop a running container,
+  </p>
+  <pre><code>docker container stop AAidentifiable_name
+</code></pre>
+  <p>
+   Similarly, to re-start a stopped container,
+  </p>
+  <pre><code>docker container start AAidentifiable_name
+</code></pre>
+  <p>
+   To remove a stopped container
+  </p>
+  <pre><code>docker container rm AAidentifiable_name
+</code></pre>
+  <p>
+   To automatically remvoe the container once it stops, use the ‘–rm’ option when you create a container
+  </p>
+  <pre><code>docker run --name=AAidentifiable_name -d --rm AAimage_name
+</code></pre>
+  <p>
+   In addition to the above two methods of running a process within a container (either in interactive mode or if the process is built in to the image), you could also specify it (for instance ‘AArun_some_process’) when you run the container
+  </p>
+  <pre><code>docker run --name=AAidentifiable_name -d --rm AAimage_name AArun_some_process
+docker run --name=AAidentifiable_name -d --rm AAimage_name /bin/bash -c "AArun_some_shell_command"
+</code></pre>
+  <p>
+   In this case, the container will stop (and get removed) once the process finished executing.
+  </p>
+  <p>
+   To run additional processes on running containers
+  </p>
+  <pre><code>docker exec -d AAidentifiable_name AArun_some_additional_process
+docker exec -it AAidentifiable_name
+</code></pre>
+  <p>
+   In the second case, you will be returned with a terminal prompt inside the running container, where you can run additional commands (for instance, if you wish to monitor any processes that may have been running in the container).
+  </p>
+  <p>
+   To get statistics on the resources that are being used by running containers,
+  </p>
+  <pre><code>docker stats
+</code></pre>
+  <p>
+   When you create (run) a container, additional options to limit the resources (CPUs, memory, etc.) used by container could be set.  For a full list,
+  </p>
+  <pre><code>docker run --help
+</code></pre>
+  <p>
+   Similarly, some of these options could be updated for a running container.  For the syntax and complete list of options,
+  </p>
+  <pre><code>docker update --help
+</code></pre>
+  <p>
+   Most practical Docker images are set up to run a service (for instance, a web server) on a specific port when a container is created with this image. To be able to access this port within the container from the host machine, a user defined port on the host machine is bound (mapped) to that of the container.  This is done by using the “-p” option when creating (running) the container
+  </p>
+  <pre><code>docker run --name=AAidentifiable_name -d --rm -p 1234:4321 AAimage_name
+</code></pre>
+  <p>
+   Here the service in the image is set up to run on 4321.  On the host computer, once the container is created, this service will be accessed on port 1234.  For example, if this service was a web-server, then, the web-server can be accessed on the host computer by going to ‘
+   <a href="http://localhost:1234'">
+    http://localhost:1234'
+   </a>
+   in any browser (or it will be ‘
+   <a href="https://localhost:1234'">
+    https://localhost:1234'
+   </a>
+   , depending on the web-server).  Multiple such ports could be mapped with multiple ‘-p’ options
+  </p>
+  <p>
+   By default, all data created inside a container (such as, files, are modifications to files) do not persist, once the container does not exist (once the container is stopped and removed). In other words, this data will not be accessible by other containers (or by the host system).  There are two options for containers to store files on the host machine. On Linux hosts, there is an additional option too.  There is an excellent comparison of these options in the official Docker documentation at
+   <a href="https://docs.docker.com/storage/">
+    https://docs.docker.com/storage/
+   </a>
+  </p>
+  <ul>
+   <li>
+    Using bind mounts, a file or folder on the host machine is mounted on to a container by using the ‘-v’ option when we are creating the container.  In this manner, data modified by the container can easily be accessed in the host system by non-docker processes as well as other containers by performing a similar bind mount during their creation. On the other hand, if the file or folder on the host machine used for the bind mounts contains host-system-critical files, they could be irreparably modified by one of the containers, thus damaging the host system.
+   </li>
+  </ul>
+  <pre><code>    docker run --name=AAidentifiable_name -d --rm -p 1234:4321 -v /AAhost_folder:/AAcontainer_folder AAimage_name
+</code></pre>
+  <p>
+   For ex: we can use the current working folder on the host machine
+  </p>
+  <pre><code>    docker run --name=AAidentifiable_name -d --rm -p 1234:4321 -v $PWD:/AAcontainer_folder AAimage_name
+</code></pre>
+  <p>
+   <br/>
+  </p>
+  <ul>
+   <li>
+    Docker specific storage volumes can be created by docker
+   </li>
+  </ul>
+  <pre><code>    docker volume create AAvolume_name
+</code></pre>
+  <p>
+   where ‘AAvolume_name’ is user specified.  These are are stored in a part of the host filesystem managed by Docker (/var/lib/docker/volumes OR /alt_loc/volumes, on Linux).  Non-docker processes on the host system will not easily modify this part of the filesystem and the data in the storage volume can be accessed by all containers in this host by adding the ‘–mount’ option when creating the container
+  </p>
+  <pre><code>    docker run --name=identifiable_name -d --rm -p 1234:4321 --mount src=volume_name,dst=/container_folder image_name
+</code></pre>
+  <p>
+   As is evident, this option is safer to the host system.  It should be the preferred method for transferring data between containers, especially if we do not need direct access to the data on the host system.
+  </p>
+  <p>
+   If necessary, we could combine these by having both a bind mount and a storage volume mounted to 2 different locations on the container (Docker does not allow the same destination folder) when the container is created.  Then, we can transfer files between these two destination folder within the container.  This could be a good option to periodically do a backup of the data being created, modified, and shared between the containers (for instance, data in a containerized database application).
+  </p>
+  <pre><code>docker run --name=identifiable_name -d --rm -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name   
+</code></pre>
+  <p>
+   If we need to run a X11 based GUI application from within the container and we have a X-server running on the host (typically the case in Linux systems), we could achieve these by bind mounting specific folders on the host system to the corresponding folders in the container and specifying the DISPLAY variable in the container to point to that of the host system.  In this case, the GUI application in the container could only be executed after the container has been created and hence, cannot be part of the image.
+  </p>
+  <pre><code>docker run --name=identifiable_name -d --rm --net=host -e DISPLAY -v "$HOME/.Xauthority:/root/.Xauthority:rw" -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name GUI_appl
+</code></pre>
+  <h1 id="create-and-share-your-own-image">
+   Create and share your own image
+  </h1>
+  <p>
+   Being able to create (run) containers out of pre-built standardized images provides an opportunity to experiment with different software without the complexities of installing (and uninstalling) ensuring all dependencies are met, and compatibility with other existing components, etc.  More importantly, it provides us a means to orchestrate the startup and shutdown of multiple containers to create an application.  Using docker compose and swarms (not covered here, but discussed very clearly in
+   <a href="https://docs.docker.com/get-started/">
+    docker documentation
+   </a>
+   , such an application could be scaled very easily by starting (and shuttind down) multiple containers on the same or multiple hosts.  This could be made more efficient with the ability to easily create your own specialized images geared towards the specific needs of an application.
+  </p>
+  <p>
+   Ideally, each image - to be more specific, the container that runs off a specific image - is configured to perform a very specific task (or service) of your application.  To create a Docker image, first create a Dockerfile with a series of instructions that represent the commands a user could all on the command line to assemble an image.  Then, a docker image can be built by running the following command in the same folder as the Dockerfile
+  </p>
+  <pre><code>docker build -t NAMESPACE/REPOSITORY .
+</code></pre>
+  <p>
+   (The NAMESPACE will not have any meaning at present, but we will see later how it could become relevant when we plan to load this image on to a registy such as Dockerhub)
+  </p>
+  <p>
+   Review the Dockefile for
+   <a href="https://hub.docker.com/r/anandvl/octave/">
+    anandvl/octave
+   </a>
+   for a very basic example.
+  </p>
+  <blockquote>
+   <p>
+    The ‘FROM’ instruction denotes the ‘base’ image on which additional components are added to build the final image.  The ‘base’ image will be one of the pre-built images already available in Dockerhub (or locally, on your host system).  A Dockerfile must always start with this instruction
+   </p>
+   <p>
+    The ‘MAINTAINER’ instruction is more of a information than a requirements
+   </p>
+   <p>
+    The ‘ENV’ instruction sets environment variables that will be needed for other parts of the image to work correctly
+   </p>
+   <p>
+    The RUN instruction will execute any commands in a new layer on top of the current image and commit the results. The resulting committed image will be used for the next instruction in the Dockerfile.  In this example, a new repository location is added to the package list and additional software (octave) is installed from this repository location
+   </p>
+  </blockquote>
+  <p>
+   For a Dockerfile with some additional steps, review the Dockerfile at
+   <a href="https://hub.docker.com/r/anandvl/anaconda/">
+    anandvl/anaconda
+   </a>
+  </p>
+  <blockquote>
+   <p>
+    The ‘EXPOSE’ instruction denotes the port numbers that are exposed by the container and these could be mapped to ports on the host using the command line options for ‘docker run’ as explained above
+   </p>
+   <p>
+    The ‘CMD’ instruction sets the executable to run when creating (running) a container from this image.  The preferred form for this is CMD [“executable”,”param1”,”param2”].  If there are multiple CMD instructions, only the last one will take effect.
+   </p>
+  </blockquote>
+  <p>
+   One way to make sure that the entire image will get built correctly and work as intended once you build it using Dockerfile is to start a container with the base image with an interactive shell (‘-it’ option). Then, start going through each of the instruction in the Docker file.
+  </p>
+  <p>
+   Once you built the image using the ‘docker build..’ command described above, you can start creating (running) a container with it on your host system.  You could also use this as a base image for building more complex images.  To share the image with others, you could either
+  </p>
+  <ul>
+   <li>
+    <p>
+     host it to Dockerhub so that others could pull the image and use it
+    </p>
+    <ul>
+     <li>
+      <p>
+       Create an account on
+       <a href="https://hub.docker.com">
+        Dockerhub
+       </a>
+       .  Create a new repository with a namespace (for free accounts, you are allowed only one namespace, which is typically, your username), repository name (image name), short and long description of the image.  You can chose your repository to be public or private - free accounts are allowed only one private repository.  You can load multiple images with diferent ‘TAG’s in to same repository.
+       <br/>
+       <br/>
+      </p>
+     </li>
+     <li>
+      <p>
+       On the host system,
+       <br/>
+       login to
+       <a href="https://hub.docker.com">
+        Dockerhub
+       </a>
+       from the command line
+      </p>
+     </li>
+    </ul>
+   </li>
+  </ul>
+  <pre><code>            docker login 
+</code></pre>
+  <p>
+   Set docker user
+  </p>
+  <pre><code>            export DOCKER_ID_USER="AADockerhub_userid"
+</code></pre>
+  <p>
+   Create a tag (TAG) for the image if you wish.
+  </p>
+  <pre><code>            docker tag NAMESPACE/REPOSITORY NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   push it to
+   <a href="https://hub.docker.com">
+    Dockerhub
+   </a>
+   .
+  </p>
+  <pre><code>            docker push NAMESPACE/REPOSITORY:TAG
+</code></pre>
+  <p>
+   <br/>
+  </p>
+  <ul>
+   <li>
+    create a ‘tar’ file of the image so that you copy the file to other hosts and load the image
+    <br/>
+    On the host system
+   </li>
+  </ul>
+  <pre><code>        docker image save -o image-name.tar  NAMESPACE/REPOSITORY
+</code></pre>
+  <p>
+   On the target system (one-time)
+  </p>
+  <pre><code>        docker load -i image-name.tar
+</code></pre>
+  <p>
+   <br/>
+  </p>
+  <ul>
+   <li>
+    <p>
+     upload the Dockerfile to a github repository and link your dockerhub account to the github repository
+    </p>
+    <ul>
+     <li>
+      see separate article on setting up and syncing with Github (to be written) to upload your Dockerfile to a Github repository.
+     </li>
+     <li>
+      log in to your
+      <a href="https://hub.docker.com">
+       Dockerhub
+      </a>
+      account in a browser.
+     </li>
+     <li>
+      From the top right-corner, select ‘Create-Create Automated Build’.
+     </li>
+     <li>
+      Select ‘Link Github’
+     </li>
+     <li>
+      Agree to the prompt from Github to give access for Dockerhub to access your repository.
+     </li>
+     <li>
+      It will list all your github repositories, Chose the Github repository that contains the Dockerfile of interest.
+     </li>
+     <li>
+      Now, you can decide on the name of the repository (and tag) on dockerhub (by default, it will keep the same name as that of your Github repository).  By default, branch names in Github repository will map to Docker build tags.  For instance, ‘master’ branch on Github will map to ‘latest’ tag on Docker.
+     </li>
+     <li>
+      Once you are finished with this process, Dockerhub will automatically start to build your image based on the Dockerfile in your Github repository.  Depending on the size of the final Docker image, this may take some time - up to a few hours for images that are few GB in size. The ‘readme.md’ file from your Github repository will be used as the long description of your Docker image in Dockerhub
+     </li>
+     <li>
+      Review the Build Settings in your repository on Dockerhub to appropriately modify if necessary.  For instance, you may not want to trigger a build each time your Github repository changes since even changes to the ‘readme.md’ file (or any other non-Dockerfile files) in your Github repository will trigger an image (re-)build on Dockerhub
+     </li>
+     <li>
+      This process of updating a Docker image on Dockerhub serves two purposes - whenever you update your Dockerfile in the future, you just need to upload it to your repository and the docker image on dockerhub will be recreated automatically.  In addition, it saves you uploading the entire docker image to Dockerhub since for home internet connections, the upload speeds (data transfers going out of your home network) is in typically much slower than download speeds.
+     </li>
+    </ul>
+   </li>
+  </ul>
+ </body>
 </html>
-
-<p>Docker background
-    - Separate machines
-    - Dual boot
-    - VMs
-    - Docker</p>
-
-<pre><code>A container runs natively on Linux and shares the kernel of the host machine with other containers. It runs a discrete process, taking no more memory than any other executable, making it lightweight.
-</code></pre>
-
-<p>By contrast, a virtual machine (VM) runs a full-blown “guest” operating system with virtual access to host resources through a hypervisor. In general, VMs provide an environment with more resources than most applications need.</p>
-
-<p>Docker fundamentals
-    A Docker image is made up of a series of filesystem layers representing instructions that make up an executable 
-    software application. An image is an immutable binary file including the application and all other dependencies 
-    such as libraries, binaries and instructions necessary for running the application.</p>
-
-<pre><code>When you 'run' a docker image, you create a container which is a snapshot of the corresponding image. For those
-familiar with object oriented programming (OOP), a docker image and container is equivalent to that of a class and
-object (instance of a class).  Just like in OOP, you could have multiple containers running simulataneously that
-are spawned off the same docker image.
-
-Pre-built images are availabe in Docker registries.  One of the most popular registry is 
-[Dockerhub][https://hub.docker.com].  At Dockerhub, In addition to numerous images created by individuals, 
-you will also find 'official' images for various popular open source software such as python, r-base, 
-MySQL, Tomcat, etc.  To begin experimenting with running and interacting with Docker containers, these 
-images could serve as a good starting point.  Some of the other common registries are Quay, Google
-container registry, Amazon Elastic Container Registry.
-
-Later, you may want to start building your own customized image to meet your needs. A new image is created 
-from a 'Dockerfile', which is a text file listing out the sequence of the above-mentioned instructions that 
-constitute the image.  We will briefly go over this process later.  For more information, there are plenty 
-of in-depth Docker guides online and the official docker documentation is excellent and . In addition, in 
-most cases, you can also review the 'Dockerfile' of the images available in the registries.
-
-But, before you could run a docker image and create a container, you need to install Docker on your system - 
-typically referred to as the host system.
-</code></pre>
-
-<p>Docker installation on Debian 9 and Windows 10
-    Instructions are provided for Debian Stretch (Debian 9) and Windows 10 (Professional or Enterprise 64-bit). <br />
-    Instructions for other Linux systems are similar and should be available online.  Installation of Docker 
-    in other Windows version (7, 8, 10 Home etc.) require installation of additional software (Docker Toolbox) 
-    and are not covered here.</p>
-
-<pre><code>For Debian stretch
-    Update the package list and upgrade all installed packages
-        sudo apt update
-        sudo apt upgrade
-
-    Install required dependencies to add new repositories over HTTPS (some of it may already be installed)
-        sudo apt install apt-transport-https ca-certificates curl software-properties-common gnupg2
-
-    Add the Docker’s GPG key to your apt keyring 
-        curl -fsSL https://download.docker.com/linux/debian/gpg | sudo apt-key add -
-
-    Verify that you now have the key with the following fingerprint 
-        9DC8 5822 9FC7 DD38 854A E2D8 8D81 803C 0EBF CD88, 
-        by searching for the last 8 characters of the fingerprint.
-    sudo apt-key fingerprint 0EBFCD88
-
-    Add the Docker stable repository to the apt-repository list
-        sudo add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/debian stretch stable"
-
-    Once again, update the package list (with the newly added repository) and install docker community edition
-        sudo apt update
-        sudo apt install docker-ce
-
-    The docker service starts automatically once installed, To verify installation 
-        sudo systemctl status docker
-        and/or
-        sudo docker -v
-
-    To run Docker commands without prepending sudo you’ll need to add your user to the docker group that is
-        created during Docker installation. 
-        sudo usermod -aG docker $USER
-
-For Windows 10.  
-    The whole process may require one reboot and will require one session log out.  So, be prepared by
-    saving all your current work and closing out all apps to be safe.
-
-    Go to Control Panel, select Turn on or off Windows featuers.  Scroll down and put a check mark
-        next to the following two featuers
-            - 'Hyper-V' 
-            - 'Containers'.
-    This will take a few mins to apply changes and will require a reboot
-
-    Go online (Internet explorer OR Edge browser) and download 'Docker for Windows Installer.exe'
-    from https://store.docker.com/editions/community/docker-ce-desktop-windows
-
-    Once downloaded go to the download location (by default, it will go to the 'Downloads' folder
-    in your user space) and run the downloaded executable.
-
-    Leave all default selections
-
-    Will require you to log out and log back in. 
-
-    Double-click on the docker shortcut on the Desktop and the Docker icon will show up in the 
-    running apps on the taskbar.
-
-    Left click on the 'Start menu' and select 'Open PowerShell Window as Admin'.  Then, type
-        docker -v
-</code></pre>
-
-<p>Additional configurations (if necessary)
-    On Debian stretch
-        - The default location for all images, storage space for running containers, storage volumes that
-            you may create (to be discussed later), etc is /var/lib/docker.  To change the default location 
-            for these, in case you have limited space in  your /var partition.  Assume the full path to
-            your new location is /alt<em>loc.
-            - stop the docker service
-                sudo service docker stop OR sudo systemctl stop docker
-            - edit /etc/default/docker file 
-                #DOCKER</em>OPTS="--dns 8.8.8.8 --dns 8.8.4.4"
-                DOCKER<em>OPTS="-g /alt</em>loc"
-                DOCKER<em>TMPDIR="/alt</em>loc/tmp"
-            - Create the new location, if it does not exist
-                sudo /alt<em>loc
-            - Backup existing files
-                sudo tar -zcC /var/lib/docker > /some</em>location/docker<em>backup-$(date +%s).tar.gz
-            - Move the existing files to the new location
-                sudo mv /var/lib/docker /alt</em>loc
-            - Create a symlink of the new location to the default location 
-                sudo ln -s /home/shared/docker /var/lib/docker
-            - Restart service
-                sudo service docker start OR sudo systemctl start docker</p>
-
-<pre><code>On Windows 10:
-    Right-click on Docker icon and chose 'Settings'. You can review and change all the available 
-    setting.  More typical ones will be to 
-    - change the location of the images in case you have limited space in your Windows installation
-        partition (typically, C:).  Images vary in size, but in most cases, it could lie between
-        2 - 10 GBs per image.  Go to
-    - Change the number of cores and memory available to Docker.  Go to
-</code></pre>
-
-<p>Docker - Part 2:
-Common commands to use existing images from dockerhub
-    General syntax of a Docker command is</p>
-
-<pre><code>docker command [option] [subcommand] [arguments]
-
-To get general info about the docker installation
-    docker info
-
-One of the lines towards the end will be
-    Registry: https://index.docker.io/v1/
-The address corresponds to Dockerhub that I explained above and this lines denotes that Dockerhub
-is the default registry to pull (download) images.  The default registry cannot be changed.
-
-All images in Dockerhub are of the format
-    REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-For ex:  rocker/tidyverse:3.4.0
-IMAGE_TAG is optional and by default is set to 'latest'.  Some images will have different tags
-corresponding to different versions such as 'devel', 'testing', or some kind of numerical sequence
-like '3.4.0'
-
-To search for images in Dockerhub with specific keywords (for ex: python) in the name
-    docker search python
-The keyword could include REPOSITORY_NAME or IMAGE_NAME
-
-To download an image from Dockerhub on to your local system
-    docker pull REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-
-To download an image not hoste on Dockerhub (private registries, locally hosted registries, etc.)
-    docker pull other_registry:portNumber/REPOSITORY_NAME/IMAGE_NAME:IMAGE_TAG
-If this other registry requires authentication, you first have to login to this repository as
-    docker login other_registry:portNumber
-
-Another less commonly used option to obtain an image is a 'tar' file of the image that has been
-created by the same or an older version of docker.  This option is used if you wish to share a
-docker image amongst multiple machines without having to go through Dockerhub or any other 
-registries.
-    docker load -i image-name.tar
-
-To list all the images available on your local system do
-    docker images OR docker image ls
-To delete a specific image
-    docker image rm REPOSITORY_NAME/IMAGE_NAME
-
-To create (run) a container from an image, the basic command is
-    docker run image_name OR docker container run image_name
-
-Most practical docker images will start a process and the output of this process will be
-displayed in the same terminal.  One such example will be an image that is set up to start 
-a web server. 
-
-If the image is not set up to run a process, then, you may wish it run it in interactive mode
-and run various commands within the container.  In this case, you will create(run) a container
-with the '-it' mode (interactive, start a termina)
-    docker run -it image_name
-In this case you will be returned with a terminal prompt inside the running container, where
-you can run commands.  Once you exit this terminal prompt, the container will stop.
-
-If the image is set up to run a process, but you do not wish to see the process output displayed
-on the screen, you will run (create) the container in 'detached' mode using the '-d' option.
-    docker run -d image_name    
-
-Once the container has finished executing the process that got started with the container, it 
-will stop running.
-
-To find the list of running containers 
-    docker ps OR docker container ls
-To find the list of stopped containers 
-    docker ps -a OR docker container ls -a
-
-Another common option to use when creating a container is '--name', which gives you an option
-to provide an easy to identify name for the container.  If not, you will have to use a 
-system generated random name, or a jumble of random alpha numeric characters that serve
-as the container UUID, if you wish to interact with the container.  
-    docker run --name=identifiable_name -d image_name
-
-For example, to stop a running container, 
-    docker container stop identifiable_name
-Similarly, to re-start a stopped container,
-    docker container start identifiable_name
-To remove a stopped container
-    docker container rm identifiable_name
-
-To automatically remvoe the container once it stops, use the '--rm' option when you
-create a container
-    docker run --name=identifiable_name -d --rm image_name
-
-In addition to the above two methods of running a process within a container (either in
-interactive mode or if the process is built in to the image), you could also specify it
-when you run the container
-    docker run --name=identifiable_name -d --rm image_name run_some_process
-    docker run --name=identifiable_name -d --rm image_name /bin/bash -c "run_some_shell_command"
-In this case, the container will stop (and get removed) once the process finished executing.
-
-To run additional processes on running containers
-    docker exec -d identifiable_name run_some_additional_process
-    docker exec -it identifiable_name
-In the second case, you will be returned with a terminal prompt inside the running container, 
-where you can run additional commands (for instance, if you wish to monitor any processes
-that may have been running in the container).
-
-To get statistics on the resources that are being used by running containers,
-    docker stats
-
-When you create (run) a container, additional options to limit the resources (CPUs, memory, etc.) used
-by container could be sets.  For a full list, 
-    docker run --help
-
-Similarly, some of these options could be updated for a running container.  For the syntax and complete
-list of options, 
-    docker update --help
-
-Most practical Docker images are set up to run a service (for instance, a web server) on a specific
-port when a container is created with this image. To be able to access this port within the container from the
-host machine, a user defined port on the host machine is bound (mapped) to that of the container.  This is
-done by using the "-p" option when creating (running) the container
-    docker run --name=identifiable_name -d --rm -p 1234:4321 image_name
-Here the service in the image is set up to run on 4321.  On the host computer, once the container is
-created, this service will be accessed on port 1234.  For example, if this service was a web-server,
-then, the web-server can be accessed on the host computer by going to 'http://localhost:1234' in 
-any browser (or it will be 'https://localhost:1234', depending on the web-server).  Multiple such
-ports could be mapped with multiple '-p' options
-
-By default, all data created inside a container (such as, files, are modifications to files) do not
-persist, once the container does not exist (once the container is stopped and removed). In other words,
-this data will not be accessible by other containers (or by the host system).  There are two
-options for containers to store files on the host machine. On Linux hosts, there is an additional
-option too.  There is an excellent comparison of these options in the official Docker documentation at 
-https://docs.docker.com/storage/
-
-Using bind mounts, a file or folder on the host machine is mounted on to a container. In this manner,
-data modified by the container can easily be accessed in the host system by non-docker processes as
-well as other containers by performing a similar bind mount during their creation. On the other
-hand, if the file or folder on the host machine used for the bind mounts contains system-critical files, 
-they could be irreparably modified by any of the containers, thus damaging the host system. 
-To do this, we use the '-v' option when we are creating
-the container
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v /host_folder:/container_folder image_name
-    For ex: we can use the current working folder on the host machine
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v $PWD:/container_folder image_name
-
-Docker specific storage volumes can be created by docker,
-    docker volume create volume_name
-where 'volume_name' is user specified
-These are are stored in a part of the host filesystem managed by Docker (/var/lib/docker/volumes
-OR /alt_loc/volumes, on Linux).  Non-docker processes on the host system will not easily modify 
-this part of the filesystem and the data in the storage volume can be accessed by all containers 
-in this host by adding the '--mount' option when creating the container src=volume_name,dst=/container_folder   
-    docker run --name=identifiable_name -d --rm -p 1234:4321 --mount src=volume_name,dst=/container_folder image_name
-In other words, this option is safer to the host system.  It should be the preferred method for 
-transferring data between containers, especially if we do not need direct access to the data on the host
-system.  
-
-If necessary, we could combine these by having both a bind mount and a storage volume mounted to 
-2 different locations on the container (Docker does not allow the same destination folder) when
-the container is created.  Then, we can transfer files between these two destination folder within
-the container.  This could be a good option to periodically do a backup of the data being created,
-modified, and shared between the containers (for instance, data in a containerized database 
-application).
-
-    docker run --name=identifiable_name -d --rm -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name   
-
-If we need to run a X11 based GUI application from within the container and we have a X-server 
-running on the host (typically the case in Linux systems), we could achieve these by bind mounting
-specific folders on the host system to the corresponding folders in the container and specifying
-the DISPLAY variable in the container to point to that of the host system.  In this case, the GUI 
-application in the container could only be executed after the container has been created and hence,
-cannot be part of the image.
-
-    docker run --name=identifiable_name -d --rm --net=host -e DISPLAY -v "$HOME/.Xauthority:/root/.Xauthority:rw" -p 1234:4321 -v /host_folder:/container_folder1 --mount src=volume_name,dst=/container_folder2 image_name GUI_appl
-</code></pre>
-
-<p>Docker - Part 3
-Process to create your own (Dockerfile)
-    Being able to create (run) containers out of pre-built standardized images provides an opportunity 
-    to experiment with different software without the complexities of installing (and uninstalling)
-    ensuring all dependencies are met, and compatibility with other existing components, etc.  More 
-    importantly, it provides us a means to orchestrate the startup and shutdown of multiple containers
-    to create an application.  Using docker compose and swarms (not covered here, but discussed very
-    clearly in [docker documentation][https://docs.docker.com/get-started/], such an application could
-    be scaled very easily by starting (and shuttind down) multiple containers on the same or multiple 
-    hosts.  This could be made more efficient with the ability to easily create your own specialized
-    images geared towards the specific needs of an application.  Ideally, each image - to be more
-    specific, the container that runs off a specific image - is configured to perform a very specific
-    task (or service) of your application.</p>
-
-<pre><code>To create a Docker image, first create a Dockerfile with a series of instructions that represent
-the commands a user could all on the command line to assemble an image.  Then, a docker image can 
-be built by running the following command in the same folder as the Dockerfile
-    docker build -t REPOSITORY_NAME/IMAGE_NAME .
-(The REPOSITORY_NAME will not have any meaning at present, but we will see later how it could 
-become relevant when we plan to load this image on to a registy such as Dockerhub)
-
-Review the Dockefile at .. for a very basic example.  
-    - The 'FROM' instruction denotes the 'base' image on which additional components
-        are added to build the final image.  The 'base' image will be one of the 
-        pre-built images already available in Dockerhub (or locally, on your host
-        system).  A Dockerfile must always start with this instruction
-    - The 'MAINTAINER' instruction is more of a information than a requirements
-    - The 'ENV' instruction sets environment variables that will be needed for other parts of the
-        image to work correctly
-    - The RUN instruction will execute any commands in a new layer on top of the current image 
-        and commit the results. The resulting committed image will be used for the next instruction 
-        in the Dockerfile
-
-One way to make sure that the entire image will get built correctly and work as intended once 
-you build it using Dockerfile is to start a container with the base image with an interactive
-shell ('-it' option) and start going through each of the instruction in the Docker file.
-
-Once you built the image using the 'docker build..' command described above, you can start 
-creating (running) a container with it on your host system.  You could also use this as a 
-base image for complex images.  To share the image with others, you could either
-
-- host it to Dockerhub so that others could pull the image from 
-
-- create a 'tar' file of the image so that you copy the file to other hosts and load the image
-
-- upload the Dockerfile to a github repository and link your dockerhub account to the github
-    repository so that you could set up automated build of the docker image.  This serves
-    two purposes - whenever you update your Dockerfile in the future, you just need to upload
-    it to your repository and the docker image on dockerhub will be recreated automatically.
-    In addition, it saves uploading the entire docker image to Dockerhub.  In general, for
-    home internet connections, the upload speeds (data transfers going out of your home
-    network) is much slower than download speeds.
-</code></pre>
